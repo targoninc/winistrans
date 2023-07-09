@@ -1,14 +1,8 @@
-﻿
-
-using System.IO;
+﻿using System.Windows.Automation;
 using WinIsTransLibrary;
 
-List<string> allWindows = WindowManager.GetAllWindowsAndTheirChildren();
+List<AutomationElement> allWindows = WindowManager.GetAllWindowsAndTheirChildren();
 
-const string fileName = "output.txt";
-
-foreach (string window in allWindows)
-{
-    Console.WriteLine(window);
-    File.AppendAllText(fileName, window + Environment.NewLine);
-}
+WindowManager.ApplyTransparencyToWindows(allWindows, 128);
+await Task.Delay(2000);
+WindowManager.ResetTransparencyOnWindows(allWindows);
