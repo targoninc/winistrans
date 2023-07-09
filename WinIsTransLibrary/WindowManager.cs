@@ -27,7 +27,7 @@ public static class WindowManager
         foreach (AutomationElement child in children)
         {
             i++;
-            Console.WriteLine($"{indentation}{i}/{children.Count}");
+            // Console.WriteLine($"{indentation}{i}/{children.Count}");
             output.AddRange(GetWindowsAndChildren(child, level + 1));
         }
 
@@ -51,7 +51,7 @@ public static class WindowManager
         foreach (AutomationElement window in allWindows)
         {
             i++;
-            Console.WriteLine($"{i}/{allWindows.Count}");
+            // Console.WriteLine($"{i}/{allWindows.Count}");
             output.AddRange(GetWindowsAndChildren(window, 0));
         }
 
@@ -60,10 +60,8 @@ public static class WindowManager
     
     public static void ApplyTransparencyToWindow(AutomationElement window, int transparency)
     {
-        // Get the window's handle
         IntPtr windowHandle = new(window.Current.NativeWindowHandle);
 
-        // Get the extended window style
         int extendedStyle = GetWindowLong(windowHandle, GwlExstyle);
 
         // Add the WS_EX_LAYERED extended style
@@ -76,21 +74,23 @@ public static class WindowManager
             throw new Win32Exception(Marshal.GetLastWin32Error());
         }
 
-        // Set the transparency
         SetLayeredWindowAttributes(windowHandle, 0, (byte)transparency, LwaAlpha);
     }
     
-    public static void ApplyTransparencyToWindows(IEnumerable<AutomationElement> windows, int transparency)
+    public static void ApplyTransparencyToWindows(Dictionary<AutomationElement, bool> windows, int transparency)
     {
-        foreach (AutomationElement window in windows)
+        foreach (AutomationElement window in windows.Keys.Where(window => windows[window]))
         {
             ApplyTransparencyToWindow(window, transparency);
+        }
+        foreach (AutomationElement window in windows.Keys.Where(window => !windows[window]))
+        {
+            ResetTransparencyOnWindow(window);
         }
     }
     
     public static void ResetTransparencyOnWindow(AutomationElement window)
     {
-        // Get the window's handle
         IntPtr windowHandle = new(window.Current.NativeWindowHandle);
 
         // Get the extended window style
@@ -99,7 +99,6 @@ public static class WindowManager
         // Remove the WS_EX_LAYERED extended style
         extendedStyle &= ~WsExLayered;
 
-        // Set the new extended window style
         int result = SetWindowLong(windowHandle, GwlExstyle, extendedStyle);
         if (result < 0)
         {
