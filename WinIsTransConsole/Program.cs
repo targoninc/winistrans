@@ -1,7 +1,7 @@
 ﻿
 
 using System.IO;
-using WinIsTransConsole;
+using WinIsTransLibrary;
 
 List<string> allWindows = WindowManager.GetAllWindowsAndTheirChildren();
 

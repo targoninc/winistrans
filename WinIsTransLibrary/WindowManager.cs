@@ -1,6 +1,6 @@
 ﻿using System.Windows.Automation;
 
-namespace WinIsTransConsole;
+namespace WinIsTransLibrary;
 
 public static class WindowManager
 {
