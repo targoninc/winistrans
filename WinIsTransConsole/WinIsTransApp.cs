@@ -65,14 +65,6 @@ public class WinIsTransApp : IDisposable
         }
         Console.ForegroundColor = ConsoleColor.White;
     }
-    
-    private void ToggleCurrentSelectedWindow()
-    {
-        GetWindows();
-        AutomationElement window = _windows.Keys.ElementAt(_selectedWindowIndex);
-        _windows[window] = !_windows[window];
-        UpdateTransparency();
-    }
 
     private void UpdateConsole()
     {
@@ -82,6 +74,14 @@ public class WinIsTransApp : IDisposable
         Console.WriteLine("----------");
         Console.WriteLine();
         ListWindows();
+    }
+    
+    private void ToggleCurrentSelectedWindow()
+    {
+        GetWindows();
+        AutomationElement window = _windows.Keys.ElementAt(_selectedWindowIndex);
+        _windows[window] = !_windows[window];
+        UpdateTransparency();
     }
 
     private void GetWindows()
