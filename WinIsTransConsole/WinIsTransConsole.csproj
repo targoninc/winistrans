@@ -13,4 +13,16 @@
       <ProjectReference Include="..\WinIsTransLibrary\WinIsTransLibrary.csproj" />
     </ItemGroup>
 
+
+
+
+    <ItemGroup>
+      <PackageReference Include="OpenTK">
+        <Version>5.0.0-pre.8</Version>
+      </PackageReference>
+      <PackageReference Include="OpenTK.Graphics">
+        <Version>5.0.0-pre.8</Version>
+      </PackageReference>
+    </ItemGroup>
+
 </Project>

@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Windows.Automation;
+using OpenTK.Windowing.Desktop;
 using WinIsTransLibrary;
 
 namespace WinIsTransConsole;
@@ -11,7 +12,7 @@ public class WinIsTransApp : IDisposable
     private int _selectedWindowIndex;
     private Dictionary<AutomationElement, bool> _windows = new();
 
-    public void Run()
+    public void Run(GameWindow window)
     {
         Console.Title = "WinIsTrans";
         GetWindows();
@@ -26,9 +27,11 @@ public class WinIsTransApp : IDisposable
 
             switch (keyInfo.Key)
             {
+                case ConsoleKey.W:
                 case ConsoleKey.UpArrow:
                     SelectWindowUp();
                     break;
+                case ConsoleKey.S:
                 case ConsoleKey.DownArrow:
                     SelectWindowDown();
                     break;
@@ -41,6 +44,13 @@ public class WinIsTransApp : IDisposable
                 case ConsoleKey.Enter:
                     ToggleCurrentSelectedWindow();
                     break;
+                case ConsoleKey.R:
+                    RemoveTransparency();
+                    break;
+                case ConsoleKey.U:
+                    ResetTransparency();
+                    break;
+                case ConsoleKey.Q:
                 case ConsoleKey.Escape:
                     Console.WriteLine("Exiting...");
                     Environment.Exit(0);
@@ -120,6 +130,12 @@ public class WinIsTransApp : IDisposable
     {
         _transparency += TransparencyStep;
         _transparency = Math.Min(255, _transparency);
+        UpdateTransparency();
+    }
+
+    private void ResetTransparency()
+    {
+        _transparency = 255;
         UpdateTransparency();
     }
 
