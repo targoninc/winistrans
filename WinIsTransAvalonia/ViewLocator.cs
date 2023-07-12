@@ -7,10 +7,14 @@ namespace WinIsTransAvalonia;
 
 public class ViewLocator : IDataTemplate
 {
-    public Control Build(object data)
+    public Control Build(object? data)
     {
-        var name = data.GetType().FullName!.Replace("ViewModel", "View");
-        var type = Type.GetType(name);
+        if (data == null)
+        {
+            return new TextBlock { Text = "Null" };
+        }
+        string name = data.GetType().FullName!.Replace("ViewModel", "View");
+        Type? type = Type.GetType(name);
 
         if (type != null)
         {

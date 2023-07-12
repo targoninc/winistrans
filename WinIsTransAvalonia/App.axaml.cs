@@ -3,11 +3,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using WinIsTransAvalonia.ViewModels;
 using WinIsTransAvalonia.Views;
-using WinIsTransConsole;
 
 namespace WinIsTransAvalonia;
 
-public partial class App : Application
+public class App : Application
 {
     public override void Initialize()
     {
@@ -25,9 +24,5 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
-        
-        WinIsTransApp program = new();
-        //program.Run();
-        program.Dispose();
     }
 }

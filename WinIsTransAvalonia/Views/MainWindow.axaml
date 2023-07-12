@@ -15,6 +15,13 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <TextBlock 
+        Text="{Binding MainText}" 
+        HorizontalAlignment="Left" 
+        VerticalAlignment="Top"
+        Margin="10"
+        FontSize="20"
+        TextWrapping="Wrap"
+        />
 
 </Window>
