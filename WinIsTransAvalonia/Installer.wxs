@@ -1,0 +1,26 @@
+﻿<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product Id="*" Name="WinIsTrans" Language="1033" Version="2.0.0.0" Manufacturer="Targon Industries" UpgradeCode="DE7C80E2-D2F6-406D-A1D4-061BE138760A">
+        <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+        <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+        <MediaTemplate />
+
+        <Feature Id="ProductFeature" Title="WinIsTrans" Level="1">
+            <ComponentGroupRef Id="ProductComponents" />
+        </Feature>
+
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFilesFolder">
+                <Directory Id="INSTALLFOLDER" Name="WinIsTrans">
+                    <Component Id="ApplicationFiles" Guid="123A0664-A907-4CB4-903E-2ACEB463D6AC">
+                        <File Source="path\to\your\publish\directory\*" />
+                    </Component>
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <ComponentGroup Id="ProductComponents">
+            <ComponentRef Id="ApplicationFiles"/>
+        </ComponentGroup>
+    </Product>
+</Wix>

@@ -26,6 +26,6 @@
 
 
   <ItemGroup>
-    <ProjectReference Include="..\WinIsTransConsole\WinIsTransConsole.csproj" />
+    <ProjectReference Include="..\WinIsTransApp\WinIsTransApp.csproj" />
   </ItemGroup>
 </Project>

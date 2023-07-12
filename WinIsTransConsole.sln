@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinIsTransConsole", "WinIsTransConsole/WinIsTransConsole.csproj", "{B0B3AF36-5A98-47FC-A67D-A0B90EB994ED}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinIsTransApp", "WinIsTransApp\WinIsTransApp.csproj", "{B0B3AF36-5A98-47FC-A67D-A0B90EB994ED}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinIsTransLibrary", "WinIsTransLibrary\WinIsTransLibrary.csproj", "{83555736-0376-41C6-BDB0-75E24E8472C1}"
 EndProject
