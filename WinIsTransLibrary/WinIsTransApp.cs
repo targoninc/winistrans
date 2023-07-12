@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows.Automation;
 using Avalonia.Input;
 
@@ -16,28 +15,14 @@ public class WinIsTransApp : IDisposable
     }
     
     private const int TransparencyStep = 10;
-    private const int GetWindowsIntervalSeconds = 10;
+    private const int GetWindowsIntervalSeconds = 60;
     private int _transparency = 255;
     private int _selectedWindowIndex;
     private string _outText = string.Empty;
-    private Timer? _timer;
+    private Timer _timer;
     private bool _helpActive;
     private Dictionary<AutomationElement, bool> _windows = new();
     private Func<string, bool> _onTextChanged = _ => true;
-
-    public void Run()
-    {
-        UpdateText();
-        
-        while (true)
-        {
-            ConsoleKeyInfo keyInfo = Console.ReadKey();
-            Console.WriteLine();
-
-            HandleKey(keyInfo);
-            UpdateText();
-        }
-    }
 
     public void HandleKey(ConsoleKeyInfo keyInfo)
     {
@@ -158,20 +143,22 @@ public class WinIsTransApp : IDisposable
         string transparencyPercentage = Math.Round((double) _transparency / 255 * 100, 0).ToString(CultureInfo.InvariantCulture) + "%";
         _outText += $"Transparency: {transparencyPercentage}\n";
         ListWindows();
-        UpdateTextInternal(_outText);
+        UpdateTextInternalAsync(_outText);
     }
 
-    private void UpdateTextInternal(string text)
+    private async void UpdateTextInternalAsync(string text, int retries = 0)
     {
-        bool success = _onTextChanged(text);
-        if (!success)
+        if (retries > 2)
         {
-            Task task = Task.Run(() =>
-            {
-                Thread.Sleep(1000);
-                UpdateTextInternal(text);
-            });
+            return;
         }
+        bool success = _onTextChanged(text);
+        if (success)
+        {
+            return;
+        }
+        await Task.Delay(1000);
+        UpdateTextInternalAsync(text, retries + 1);
     }
     
     private void ToggleCurrentSelectedWindow()
@@ -184,23 +171,19 @@ public class WinIsTransApp : IDisposable
     private void GetWindows()
     {
         const int timerInterval = GetWindowsIntervalSeconds * 1000;
-        _timer = new Timer(UpdateWindows, null, 0, timerInterval);
+        _timer = new Timer(UpdateWindows, null, 5000, timerInterval);
     }
 
-    private void UpdateWindows(object? state)
+    private async void UpdateWindows(object? state)
     {
-        Console.WriteLine("Updating windows...");
-        Stopwatch stopwatch = new();
-        stopwatch.Start();
-        List<AutomationElement> windows = WindowManager.GetAllWindowsAndTheirChildren();
+        List<AutomationElement> windows = await Task.Run(WindowManager.GetAllWindowsAndTheirChildren);
         Dictionary<AutomationElement, bool> windowsCache = _windows;
-        _windows = windows.ToDictionary(window => window, window => false);
-        foreach (AutomationElement window in windowsCache.Keys.Where(window => _windows.ContainsKey(window)))
+        Dictionary<AutomationElement,bool> newWindows = windows.ToDictionary(window => window, window => false);
+        foreach (AutomationElement window in windowsCache.Keys.Where(window => newWindows.ContainsKey(window)))
         {
-            _windows[window] = windowsCache[window];
+            newWindows[window] = windowsCache[window];
         }
-        stopwatch.Stop();
-        Console.WriteLine($"Updated windows in {stopwatch.ElapsedMilliseconds}ms");
+        _windows = newWindows;
     }
 
     private void SelectWindowUp()
