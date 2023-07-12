@@ -11,6 +11,7 @@ public class WinIsTransApp : IDisposable
     public void AttachTextHandler(Func<string, bool> onTextChanged)
     {
         _onTextChanged = onTextChanged;
+        UpdateText();
     }
     
     private int _transparency = 255;
@@ -71,6 +72,7 @@ public class WinIsTransApp : IDisposable
             case ConsoleKey.Q:
             case ConsoleKey.Escape:
                 Console.WriteLine("Exiting...");
+                RemoveTransparency();
                 Environment.Exit(0);
                 return;
             default:

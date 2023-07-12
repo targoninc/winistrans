@@ -7,21 +7,30 @@
         x:Class="WinIsTransAvalonia.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual"
+        Position="20 20"
         Title="WinIsTransAvalonia">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
+        <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <TextBlock 
-        Text="{Binding MainText}" 
-        HorizontalAlignment="Left" 
+
+    <Window.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="FontSize" Value="16" />
+        </Style>
+    </Window.Styles>
+
+    <TextBlock
+        Text="{Binding MainText}"
+        HorizontalAlignment="Left"
         VerticalAlignment="Top"
         Margin="10"
         FontSize="20"
-        TextWrapping="Wrap"
-        />
+        TextWrapping="Wrap" />
 
 </Window>
