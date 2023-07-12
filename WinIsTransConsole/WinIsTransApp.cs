@@ -12,7 +12,7 @@ public class WinIsTransApp : IDisposable
     private int _selectedWindowIndex;
     private Dictionary<AutomationElement, bool> _windows = new();
 
-    public void Run(GameWindow window)
+    public void Run()
     {
         Console.Title = "WinIsTrans";
         GetWindows();
