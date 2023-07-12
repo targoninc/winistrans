@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text;
 using System.Windows.Automation;
 using Avalonia.Input;
 
@@ -16,6 +17,9 @@ public class WinIsTransApp : IDisposable
     
     private const int TransparencyStep = 10;
     private const int GetWindowsIntervalSeconds = 60;
+    private const int MaxTransparency = 255;
+    private const int MinTransparency = 0;
+    private const int MaxRetries = 2;
     private int _transparency = 255;
     private int _selectedWindowIndex;
     private string _outText = string.Empty;
@@ -23,6 +27,7 @@ public class WinIsTransApp : IDisposable
     private bool _helpActive;
     private Dictionary<AutomationElement, bool> _windows = new();
     private Func<string, bool> _onTextChanged = _ => true;
+    private readonly object _windowsLock = new object();
 
     public void HandleKey(ConsoleKeyInfo keyInfo)
     {
@@ -127,16 +132,21 @@ public class WinIsTransApp : IDisposable
 
     private void ListWindows()
     {
-        for (int i = 0; i < _windows.Count; i++)
-        {
-            AutomationElement window = _windows.Keys.ElementAt(i);
-            bool isSelected = i == _selectedWindowIndex;
-            bool isTransparent = _windows[window];
-            string selectedIndicator = isSelected ? "<" : " ";
-            string activeIndicator = isTransparent ? ">" : " ";
-            _outText += $"{activeIndicator} {window.Current.Name} {selectedIndicator}\n";
+        StringBuilder sb = new();
+        lock(_windowsLock) {
+            for (int i = 0; i < _windows.Count; i++)
+            {
+                AutomationElement window = _windows.Keys.ElementAt(i);
+                bool isSelected = i == _selectedWindowIndex;
+                bool isTransparent = _windows[window];
+                string selectedIndicator = isSelected ? "<" : " ";
+                string activeIndicator = isTransparent ? ">" : " ";
+                sb.AppendLine($"{activeIndicator} {window.Current.Name} {selectedIndicator}");
+            }
         }
+        _outText = sb.ToString();
     }
+
 
     private void UpdateText()
     {
@@ -146,20 +156,32 @@ public class WinIsTransApp : IDisposable
         UpdateTextInternalAsync(_outText);
     }
 
-    private async void UpdateTextInternalAsync(string text, int retries = 0)
+    private async void UpdateTextInternalAsync(string text, int retries = 0, CancellationToken cancellationToken = default)
     {
-        if (retries > 2)
+        try
         {
-            return;
+            if (retries > MaxRetries)
+            {
+                return;
+            }
+            bool success = _onTextChanged(text);
+            if (success)
+            {
+                return;
+            }
+            await Task.Delay(1000, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            UpdateTextInternalAsync(text, retries + 1, cancellationToken);
         }
-        bool success = _onTextChanged(text);
-        if (success)
+        catch (Exception ex)
         {
-            return;
+            Console.WriteLine($"Error updating text: {ex.Message}");
         }
-        await Task.Delay(1000);
-        UpdateTextInternalAsync(text, retries + 1);
     }
+
     
     private void ToggleCurrentSelectedWindow()
     {
@@ -176,14 +198,25 @@ public class WinIsTransApp : IDisposable
 
     private async void UpdateWindows(object? state)
     {
-        List<AutomationElement> windows = await Task.Run(WindowManager.GetAllWindowsAndTheirChildren);
-        Dictionary<AutomationElement, bool> windowsCache = _windows;
-        Dictionary<AutomationElement,bool> newWindows = windows.ToDictionary(window => window, window => false);
-        foreach (AutomationElement window in windowsCache.Keys.Where(window => newWindows.ContainsKey(window)))
+        try
         {
-            newWindows[window] = windowsCache[window];
+            List<AutomationElement> windows = await Task.Run(WindowManager.GetAllWindowsAndTheirChildren);
+            Dictionary<AutomationElement, bool> newWindows = windows.ToDictionary(window => window, window => false);
+
+            lock (_windowsLock)
+            {
+                Dictionary<AutomationElement, bool> windowsCache = _windows;
+                foreach (AutomationElement window in windowsCache.Keys.Where(window => newWindows.ContainsKey(window)))
+                {
+                    newWindows[window] = windowsCache[window];
+                }
+                _windows = newWindows;
+            }
         }
-        _windows = newWindows;
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting windows: {ex.Message}");
+        }
     }
 
     private void SelectWindowUp()
@@ -203,14 +236,14 @@ public class WinIsTransApp : IDisposable
     private void IncreaseTransparency()
     {
         _transparency -= TransparencyStep;
-        _transparency = Math.Max(0, _transparency);
+        _transparency = Math.Max(MinTransparency, _transparency);
         UpdateTransparency();
     }
 
     private void DecreaseTransparency()
     {
         _transparency += TransparencyStep;
-        _transparency = Math.Min(255, _transparency);
+        _transparency = Math.Min(MaxTransparency, _transparency);
         UpdateTransparency();
     }
 
@@ -228,18 +261,24 @@ public class WinIsTransApp : IDisposable
 
     private void SelectAll()
     {
-        foreach (AutomationElement window in _windows.Keys)
+        lock (_windowsLock)
         {
-            _windows[window] = true;
+            foreach (AutomationElement window in _windows.Keys)
+            {
+                _windows[window] = true;
+            }
         }
         UpdateTransparency();
     }
 
     private void UnselectAll()
     {
-        foreach (AutomationElement window in _windows.Keys)
+        lock (_windowsLock)
         {
-            _windows[window] = false;
+            foreach (AutomationElement window in _windows.Keys)
+            {
+                _windows[window] = false;
+            }
         }
         UpdateTransparency();
     }
