@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
 using System.Windows.Automation;
 using Avalonia.Input;
 using WinIsTransLibrary;
@@ -41,6 +42,7 @@ public class WinIsTransApp : IDisposable
 
     public void HandleKey(ConsoleKeyInfo keyInfo)
     {
+        _outText = string.Empty;
         switch (keyInfo.Key)
         {
             case ConsoleKey.W:
@@ -72,14 +74,52 @@ public class WinIsTransApp : IDisposable
                 Environment.Exit(0);
                 return;
             default:
-                Console.WriteLine("Unsupported key. Try again.");
+                Console.WriteLine($"Unsupported key ({keyInfo.Key})");
                 break;
         }
     }
     
     public void HandleAvaloniaKey(KeyEventArgs key)
     {
-        ConsoleKeyInfo keyInfo = new((char) key.Key, (ConsoleKey) key.Key, false, false, false);
+        ConsoleKey newKey;
+        switch (key.Key)
+        {
+            case Key.W:
+            case Key.Up:
+                newKey = ConsoleKey.UpArrow;
+                break;
+            case Key.S:
+            case Key.Down:
+                newKey = ConsoleKey.DownArrow;
+                break;
+            case Key.OemPlus:
+            case Key.Add:
+                newKey = ConsoleKey.OemPlus;
+                break;
+            case Key.OemMinus:
+            case Key.Subtract:
+                newKey = ConsoleKey.OemMinus;
+                break;
+            case Key.Enter:
+                newKey = ConsoleKey.Enter;
+                break;
+            case Key.R:
+                newKey = ConsoleKey.R;
+                break;
+            case Key.U:
+                newKey = ConsoleKey.U;
+                break;
+            case Key.Q:
+            case Key.Escape:
+                newKey = ConsoleKey.Escape;
+                break;
+            default:
+                Console.WriteLine($"Unsupported key ({key.Key})");
+                return;
+        }
+
+        ConsoleKeyInfo keyInfo = new((char) newKey, newKey, false, false, false);
+        HandleKey(keyInfo);
     }
 
     private void ListWindows()
@@ -105,7 +145,6 @@ public class WinIsTransApp : IDisposable
     
     private void ToggleCurrentSelectedWindow()
     {
-        GetWindows();
         AutomationElement window = _windows.Keys.ElementAt(_selectedWindowIndex);
         _windows[window] = !_windows[window];
         UpdateTransparency();
@@ -113,6 +152,15 @@ public class WinIsTransApp : IDisposable
 
     private void GetWindows()
     {
+        const int timerInterval = 60 * 1000;
+        Timer timer = new(UpdateWindows, null, 0, timerInterval);
+    }
+
+    private void UpdateWindows(object? state)
+    {
+        Console.WriteLine("Updating windows...");
+        Stopwatch stopwatch = new();
+        stopwatch.Start();
         List<AutomationElement> windows = WindowManager.GetAllWindowsAndTheirChildren();
         Dictionary<AutomationElement, bool> windowsCache = _windows;
         _windows = windows.ToDictionary(window => window, window => false);
@@ -120,20 +168,22 @@ public class WinIsTransApp : IDisposable
         {
             _windows[window] = windowsCache[window];
         }
+        stopwatch.Stop();
+        Console.WriteLine($"Updated windows in {stopwatch.ElapsedMilliseconds}ms");
     }
 
     private void SelectWindowUp()
     {
-        GetWindows();
         _selectedWindowIndex--;
         _selectedWindowIndex = Math.Max(0, _selectedWindowIndex);
+        UpdateText();
     }
 
     private void SelectWindowDown()
     {
-        GetWindows();
         _selectedWindowIndex++;
         _selectedWindowIndex = Math.Min(_windows.Count - 1, _selectedWindowIndex);
+        UpdateText();
     }
 
     private void IncreaseTransparency()
@@ -158,14 +208,14 @@ public class WinIsTransApp : IDisposable
 
     private void UpdateTransparency()
     {
-        GetWindows();
         WindowManager.ApplyTransparencyToWindows(_windows, _transparency);
+        UpdateText();
     }
 
     private void RemoveTransparency()
     {
-        GetWindows();
         WindowManager.ResetTransparencyOnWindows(_windows.Keys.ToList());
+        UpdateText();
     }
 
     public void Dispose()

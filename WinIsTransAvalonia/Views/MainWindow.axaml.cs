@@ -1,3 +1,4 @@
+using System;
 using Avalonia.Controls;
 using Avalonia.Input;
 using WinIsTransAvalonia.ViewModels;
@@ -24,6 +25,7 @@ public partial class MainWindow : Window
     {
         if (DataContext is not MainWindowViewModel viewModel)
         {
+            Console.WriteLine("DataContext is not MainWindowViewModel");
             return false;
         }
         viewModel.MainText = text;
@@ -32,8 +34,10 @@ public partial class MainWindow : Window
     
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
+        Console.WriteLine($"OnKeyDown: {e.Key}");
         if (DataContext is not MainWindowViewModel viewModel)
         {
+            Console.WriteLine("DataContext is not MainWindowViewModel");
             return;
         }
         _program.HandleAvaloniaKey(e);
