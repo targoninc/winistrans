@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Windows.Automation;
 using Avalonia.Input;
-using WinIsTransLibrary;
 
 namespace WinIsTransConsole;
 

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace WinIsTransLibrary;
+namespace WinIsTransConsole;
 
 public static class NativeMethods
 {

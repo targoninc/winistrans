@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
-using static WinIsTransLibrary.NativeMethods;
+using static WinIsTransConsole.NativeMethods;
 
-namespace WinIsTransLibrary;
+namespace WinIsTransConsole;
 
 public static class WindowManager
 {
