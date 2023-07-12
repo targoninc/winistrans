@@ -15,7 +15,6 @@ public partial class MainWindow : Window
         InitializeComponent();
         
         _program = new WinIsTransApp();
-        _program.Initialize();
         _program.AttachTextHandler(OnTextChanged);
         
         KeyDown += OnKeyDown;

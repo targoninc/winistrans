@@ -10,6 +10,9 @@
         SizeToContent="WidthAndHeight"
         WindowStartupLocation="Manual"
         Position="20 20"
+        CanResize="False"
+        FontSize="12"
+        FontFamily="/Assets/Kanit-Regular.ttf#Kanit"
         Title="WinIsTransAvalonia">
 
     <Design.DataContext>
@@ -20,8 +23,9 @@
 
 
     <Window.Styles>
-        <Style Selector="TextBlock">
-            <Setter Property="FontSize" Value="16" />
+        <Style Selector="Window">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="Black" />
         </Style>
     </Window.Styles>
 

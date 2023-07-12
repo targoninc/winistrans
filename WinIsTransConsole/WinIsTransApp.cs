@@ -11,6 +11,8 @@ public class WinIsTransApp : IDisposable
     public void AttachTextHandler(Func<string, bool> onTextChanged)
     {
         _onTextChanged = onTextChanged;
+        GetWindows();
+        RemoveTransparency();
         UpdateText();
     }
     
@@ -18,14 +20,10 @@ public class WinIsTransApp : IDisposable
     private const int TransparencyStep = 10;
     private int _selectedWindowIndex;
     private Dictionary<AutomationElement, bool> _windows = new();
-    private Func<string, bool> _onTextChanged = text => true;
+    private Func<string, bool> _onTextChanged = _ => true;
     private string _outText = string.Empty;
-
-    public void Initialize()
-    {
-        GetWindows();
-        RemoveTransparency();
-    }
+    private Timer? _timer;
+    private bool _helpActive;
 
     public void Run()
     {
@@ -66,8 +64,14 @@ public class WinIsTransApp : IDisposable
             case ConsoleKey.R:
                 RemoveTransparency();
                 break;
-            case ConsoleKey.U:
+            case ConsoleKey.T:
                 ResetTransparency();
+                break;
+            case ConsoleKey.C:
+                UnselectAll();
+                break;
+            case ConsoleKey.Spacebar:
+                ToggleHelp();
                 break;
             case ConsoleKey.Q:
             case ConsoleKey.Escape:
@@ -108,8 +112,14 @@ public class WinIsTransApp : IDisposable
             case Key.R:
                 newKey = ConsoleKey.R;
                 break;
-            case Key.U:
-                newKey = ConsoleKey.U;
+            case Key.T:
+                newKey = ConsoleKey.T;
+                break;
+            case Key.C:
+                newKey = ConsoleKey.C;
+                break;
+            case Key.Space:
+                newKey = ConsoleKey.Spacebar;
                 break;
             case Key.Q:
             case Key.Escape:
@@ -155,7 +165,7 @@ public class WinIsTransApp : IDisposable
     private void GetWindows()
     {
         const int timerInterval = 60 * 1000;
-        Timer timer = new(UpdateWindows, null, 0, timerInterval);
+        _timer = new Timer(UpdateWindows, null, 0, timerInterval);
     }
 
     private void UpdateWindows(object? state)
@@ -177,14 +187,14 @@ public class WinIsTransApp : IDisposable
     private void SelectWindowUp()
     {
         _selectedWindowIndex--;
-        _selectedWindowIndex = Math.Max(0, _selectedWindowIndex);
+        _selectedWindowIndex = _selectedWindowIndex < 0 ? _windows.Count - 1 : _selectedWindowIndex;
         UpdateText();
     }
 
     private void SelectWindowDown()
     {
         _selectedWindowIndex++;
-        _selectedWindowIndex = Math.Min(_windows.Count - 1, _selectedWindowIndex);
+        _selectedWindowIndex = _selectedWindowIndex >= _windows.Count ? 0 : _selectedWindowIndex;
         UpdateText();
     }
 
@@ -214,15 +224,40 @@ public class WinIsTransApp : IDisposable
         UpdateText();
     }
 
+    private void UnselectAll()
+    {
+        foreach (AutomationElement window in _windows.Keys)
+        {
+            _windows[window] = false;
+        }
+        UpdateTransparency();
+    }
+
+    private void ToggleHelp()
+    {
+        if (_helpActive)
+        {
+            _helpActive = false;
+            _outText = string.Empty;
+            UpdateText();
+        }
+        else
+        {
+            _helpActive = true;
+            _outText = "Help";
+            _onTextChanged(_outText);
+        }
+    }
+
     private void RemoveTransparency()
     {
         WindowManager.ResetTransparencyOnWindows(_windows.Keys.ToList());
-        UpdateText();
     }
 
     public void Dispose()
     {
         Console.WriteLine("Removing transparency...");
         RemoveTransparency();
+        _timer?.Dispose();
     }
 }

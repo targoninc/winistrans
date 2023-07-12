@@ -110,7 +110,13 @@ public static class WindowManager
     {
         foreach (AutomationElement window in windows)
         {
-            ResetTransparencyOnWindow(window);
+            try
+            {
+                ResetTransparencyOnWindow(window);
+            } catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
     }
 }
