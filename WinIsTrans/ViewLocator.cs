@@ -1,9 +1,9 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using WinIsTransAvalonia.ViewModels;
+using WinIsTrans.ViewModels;
 
-namespace WinIsTransAvalonia;
+namespace WinIsTrans;
 
 public class ViewLocator : IDataTemplate
 {

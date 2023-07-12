@@ -26,10 +26,6 @@
 
 
   <ItemGroup>
-    <ProjectReference Include="..\WinIsTransApp\WinIsTransApp.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Installer.wixproj" />
+    <ProjectReference Include="..\WinIsTransLibrary\WinIsTransLibrary.csproj" />
   </ItemGroup>
 </Project>

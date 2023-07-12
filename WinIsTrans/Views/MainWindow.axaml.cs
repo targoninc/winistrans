@@ -1,10 +1,10 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Input;
-using WinIsTransAvalonia.ViewModels;
+using WinIsTrans.ViewModels;
 using WinIsTransConsole;
 
-namespace WinIsTransAvalonia.Views;
+namespace WinIsTrans.Views;
 
 public partial class MainWindow : Window
 {

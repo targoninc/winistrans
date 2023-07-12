@@ -1,10 +1,10 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using WinIsTransAvalonia.ViewModels;
-using WinIsTransAvalonia.Views;
+using WinIsTrans.ViewModels;
+using WinIsTrans.Views;
 
-namespace WinIsTransAvalonia;
+namespace WinIsTrans;
 
 public class App : Application
 {

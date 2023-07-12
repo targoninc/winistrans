@@ -2,7 +2,7 @@
 using Avalonia;
 using Avalonia.ReactiveUI;
 
-namespace WinIsTransAvalonia;
+namespace WinIsTrans;
 
 class Program
 {

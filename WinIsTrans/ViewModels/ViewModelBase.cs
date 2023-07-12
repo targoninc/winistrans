@@ -1,6 +1,6 @@
 ﻿using ReactiveUI;
 
-namespace WinIsTransAvalonia.ViewModels;
+namespace WinIsTrans.ViewModels;
 
 public class ViewModelBase : ReactiveObject
 {
