@@ -11,7 +11,7 @@
         WindowStartupLocation="Manual"
         Position="20 20"
         CanResize="False"
-        FontSize="12"
+        FontSize="10"
         FontFamily="/Assets/Kanit-Regular.ttf#Kanit"
         Topmost="True"
         Title="WinIsTrans">

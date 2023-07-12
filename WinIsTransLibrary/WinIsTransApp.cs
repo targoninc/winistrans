@@ -16,7 +16,7 @@ public class WinIsTransApp : IDisposable
     }
     
     private const int TransparencyStep = 10;
-    private const int GetWindowsIntervalSeconds = 60;
+    private const int GetWindowsIntervalSeconds = 300;
     private const int MaxTransparency = 255;
     private const int MinTransparency = 0;
     private const int MaxRetries = 2;
@@ -74,6 +74,7 @@ public class WinIsTransApp : IDisposable
                 return;
             default:
                 Console.WriteLine($"Unsupported key ({keyInfo.Key})");
+                UpdateText();
                 break;
         }
     }
@@ -133,7 +134,13 @@ public class WinIsTransApp : IDisposable
     private void ListWindows()
     {
         StringBuilder sb = new();
+        sb.AppendLine($"Transparency: {_transparency}");
+        sb.AppendLine("Windows:");
         lock(_windowsLock) {
+            if (_windows.Count == 0)
+            {
+                sb.AppendLine("Press any key if there are no windows...");
+            }
             for (int i = 0; i < _windows.Count; i++)
             {
                 AutomationElement window = _windows.Keys.ElementAt(i);
@@ -193,7 +200,7 @@ public class WinIsTransApp : IDisposable
     private void GetWindows()
     {
         const int timerInterval = GetWindowsIntervalSeconds * 1000;
-        _timer = new Timer(UpdateWindows, null, 5000, timerInterval);
+        _timer = new Timer(UpdateWindows, null, 0, timerInterval);
     }
 
     private async void UpdateWindows(object? state)
