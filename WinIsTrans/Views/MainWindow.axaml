@@ -11,7 +11,6 @@
         WindowStartupLocation="Manual"
         Position="20 20"
         CanResize="False"
-        FontSize="10"
         FontFamily="/Assets/Kanit-Regular.ttf#Kanit"
         Topmost="True"
         Title="WinIsTrans">
@@ -35,7 +34,7 @@
         HorizontalAlignment="Left"
         VerticalAlignment="Top"
         Margin="30 20"
-        FontSize="20"
+        FontSize="16"
         TextWrapping="Wrap" />
 
 </Window>

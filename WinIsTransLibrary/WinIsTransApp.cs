@@ -74,7 +74,7 @@ public class WinIsTransApp : IDisposable
                 return;
             default:
                 Console.WriteLine($"Unsupported key ({keyInfo.Key})");
-                UpdateText();
+                UpdateTransparency();
                 break;
         }
     }
