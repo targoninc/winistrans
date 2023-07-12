@@ -4,7 +4,7 @@ namespace WinIsTransAvalonia.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase
 {
-    private string _mainText = "Nothing yet...";
+    private string _mainText = "Waiting...";
 
     public string MainText
     {

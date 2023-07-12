@@ -16,14 +16,15 @@ public class WinIsTransApp : IDisposable
         UpdateText();
     }
     
-    private int _transparency = 255;
     private const int TransparencyStep = 10;
+    private const int GetWindowsIntervalSeconds = 10;
+    private int _transparency = 255;
     private int _selectedWindowIndex;
-    private Dictionary<AutomationElement, bool> _windows = new();
-    private Func<string, bool> _onTextChanged = _ => true;
     private string _outText = string.Empty;
     private Timer? _timer;
     private bool _helpActive;
+    private Dictionary<AutomationElement, bool> _windows = new();
+    private Func<string, bool> _onTextChanged = _ => true;
 
     public void Run()
     {
@@ -58,7 +59,7 @@ public class WinIsTransApp : IDisposable
             case ConsoleKey.OemMinus:
                 DecreaseTransparency();
                 break;
-            case ConsoleKey.Enter:
+            case ConsoleKey.Spacebar:
                 ToggleCurrentSelectedWindow();
                 break;
             case ConsoleKey.R:
@@ -70,7 +71,10 @@ public class WinIsTransApp : IDisposable
             case ConsoleKey.C:
                 UnselectAll();
                 break;
-            case ConsoleKey.Spacebar:
+            case ConsoleKey.V:
+                SelectAll();
+                break;
+            case ConsoleKey.Enter:
                 ToggleHelp();
                 break;
             case ConsoleKey.Q:
@@ -118,6 +122,9 @@ public class WinIsTransApp : IDisposable
             case Key.C:
                 newKey = ConsoleKey.C;
                 break;
+            case Key.V:
+                newKey = ConsoleKey.V;
+                break;
             case Key.Space:
                 newKey = ConsoleKey.Spacebar;
                 break;
@@ -152,7 +159,20 @@ public class WinIsTransApp : IDisposable
         string transparencyPercentage = Math.Round((double) _transparency / 255 * 100, 0).ToString(CultureInfo.InvariantCulture) + "%";
         _outText += $"Transparency: {transparencyPercentage}\n";
         ListWindows();
-        _onTextChanged(_outText);
+        UpdateTextInternal(_outText);
+    }
+
+    private void UpdateTextInternal(string text)
+    {
+        bool success = _onTextChanged(text);
+        if (!success)
+        {
+            Task task = Task.Run(() =>
+            {
+                Thread.Sleep(1000);
+                UpdateTextInternal(text);
+            });
+        }
     }
     
     private void ToggleCurrentSelectedWindow()
@@ -164,7 +184,7 @@ public class WinIsTransApp : IDisposable
 
     private void GetWindows()
     {
-        const int timerInterval = 60 * 1000;
+        const int timerInterval = GetWindowsIntervalSeconds * 1000;
         _timer = new Timer(UpdateWindows, null, 0, timerInterval);
     }
 
@@ -224,6 +244,15 @@ public class WinIsTransApp : IDisposable
         UpdateText();
     }
 
+    private void SelectAll()
+    {
+        foreach (AutomationElement window in _windows.Keys)
+        {
+            _windows[window] = true;
+        }
+        UpdateTransparency();
+    }
+
     private void UnselectAll()
     {
         foreach (AutomationElement window in _windows.Keys)
@@ -241,10 +270,22 @@ public class WinIsTransApp : IDisposable
             _outText = string.Empty;
             UpdateText();
         }
+        
         else
         {
             _helpActive = true;
-            _outText = "Help";
+            _outText = "Help:\n" +
+                       "W/Up Arrow: Select window above\n" +
+                       "S/Down Arrow: Select window below\n" +
+                       "+: Increase transparency\n" +
+                       "-: Decrease transparency\n" +
+                       "Space: Toggle transparency on selected window\n" +
+                       "R: Remove transparency from all windows\n" +
+                       "T: Reset transparency to 100%\n" +
+                       "C: Unselect all windows\n" +
+                       "V: Select all windows\n" +
+                       "Enter: Toggle help\n" +
+                       "Q/Esc: Exit\n";
             _onTextChanged(_outText);
         }
     }

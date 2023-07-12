@@ -15,6 +15,11 @@ public static class WindowManager
             return output;
         }
 
+        if (element.Current.IsOffscreen)
+        {
+            return output;
+        }
+
         // Add the current element's name to the list
         string indentation = new(' ', level * 4);
         output.Add(element);
@@ -27,7 +32,6 @@ public static class WindowManager
         foreach (AutomationElement child in children)
         {
             i++;
-            // Console.WriteLine($"{indentation}{i}/{children.Count}");
             output.AddRange(GetWindowsAndChildren(child, level + 1));
         }
 
@@ -51,7 +55,6 @@ public static class WindowManager
         foreach (AutomationElement window in allWindows)
         {
             i++;
-            // Console.WriteLine($"{i}/{allWindows.Count}");
             output.AddRange(GetWindowsAndChildren(window, 0));
         }
 

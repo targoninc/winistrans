@@ -6,14 +6,15 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="WinIsTransAvalonia.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/Icon/wit_icon_ico.ico"
         SizeToContent="WidthAndHeight"
         WindowStartupLocation="Manual"
         Position="20 20"
         CanResize="False"
         FontSize="12"
         FontFamily="/Assets/Kanit-Regular.ttf#Kanit"
-        Title="WinIsTransAvalonia">
+        Topmost="True"
+        Title="WinIsTrans">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -33,7 +34,7 @@
         Text="{Binding MainText}"
         HorizontalAlignment="Left"
         VerticalAlignment="Top"
-        Margin="10"
+        Margin="30 20"
         FontSize="20"
         TextWrapping="Wrap" />
 
