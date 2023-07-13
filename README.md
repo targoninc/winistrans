@@ -1,3 +1,7 @@
+# Where to get
+
+[Gumroad](https://loudar.gumroad.com/l/winistrans)
+
 # How to use
 
 Press `Enter` for help when running program ;)
