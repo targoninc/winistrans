@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Collections.Concurrent;
+using System.Globalization;
 using System.Text;
 using System.Windows.Automation;
 using Avalonia.Input;
@@ -24,9 +25,8 @@ public class WinIsTransApp : IDisposable
     private string _outText = string.Empty;
     private Timer? _timer;
     private bool _helpActive;
-    private Dictionary<AutomationElement, bool> _windows = new();
+    private ConcurrentDictionary<AutomationElement, bool> _windows = new();
     private Func<string, bool> _onTextChanged = _ => true;
-    private readonly object _windowsLock = new object();
 
     public async Task HandleKey(ConsoleKeyInfo keyInfo)
     {
@@ -141,35 +141,33 @@ public class WinIsTransApp : IDisposable
         StringBuilder sb = new();
         sb.AppendLine($"Transparency: {_transparency}");
         sb.AppendLine("Show Help (Enter)");
-        lock(_windowsLock) {
-            if (_windows.Count == 0)
-            {
-                sb.AppendLine("Press any key if there are no windows...");
-            }
-
-            List<AutomationElement> toRemove = new();
-            for (int i = 0; i < _windows.Count; i++)
-            {
-                AutomationElement window = _windows.Keys.ElementAt(i);
-                bool isSelected = i == _selectedWindowIndex;
-                bool isTransparent = _windows[window];
-                string selectedIndicator = isSelected ? "<" : " ";
-                string activeIndicator = isTransparent ? ">" : " ";
-                string name = window.Current.Name;
-                if (string.IsNullOrWhiteSpace(name))
-                {
-                    name = $"{window.Current.ClassName} ({window.Current.NativeWindowHandle.ToString()})";
-                }
-                try
-                {
-                    sb.AppendLine($"{activeIndicator} {name} {selectedIndicator}");
-                } catch (ElementNotAvailableException) // Window has been closed
-                {
-                    toRemove.Add(window);
-                }
-            }
-            toRemove.ForEach(w => _windows.Remove(w));
+        if (_windows.IsEmpty)
+        {
+            sb.AppendLine("Press any key if there are no windows...");
         }
+
+        List<AutomationElement> toRemove = new();
+        for (int i = 0; i < _windows.Count; i++)
+        {
+            AutomationElement window = _windows.Keys.ElementAt(i);
+            bool isSelected = i == _selectedWindowIndex;
+            bool isTransparent = _windows[window];
+            string selectedIndicator = isSelected ? "<" : " ";
+            string activeIndicator = isTransparent ? ">" : " ";
+            string name = window.Current.Name;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                name = $"{window.Current.ClassName} ({window.Current.NativeWindowHandle.ToString()})";
+            }
+            try
+            {
+                sb.AppendLine($"{activeIndicator} {name} {selectedIndicator}");
+            } catch (ElementNotAvailableException) // Window has been closed
+            {
+                toRemove.Add(window);
+            }
+        }
+        toRemove.ForEach(w => _windows.Remove(w, out _));
         _outText = sb.ToString();
     }
 
@@ -216,21 +214,18 @@ public class WinIsTransApp : IDisposable
     
     private async Task ToggleCurrentSelectedWindow()
     {
-        lock (_windowsLock)
+        if (_windows.Count == 0) 
         {
-            if (_windows.Count == 0) 
-            {
-                Console.WriteLine($"There are no windows to select.");
-                return;
-            }
-            if (_selectedWindowIndex < 0 || _selectedWindowIndex >= _windows.Count)
-            {
-                Console.WriteLine($"Invalid window index: {_selectedWindowIndex}");
-                return;
-            }
-            AutomationElement window = _windows.Keys.ElementAt(_selectedWindowIndex);
-            _windows[window] = !_windows[window];            
+            Console.WriteLine($"There are no windows to select.");
+            return;
         }
+        if (_selectedWindowIndex < 0 || _selectedWindowIndex >= _windows.Count)
+        {
+            Console.WriteLine($"Invalid window index: {_selectedWindowIndex}");
+            return;
+        }
+        AutomationElement window = _windows.Keys.ElementAt(_selectedWindowIndex);
+        _windows[window] = !_windows[window]; 
         await UpdateTransparency();
     }
 
@@ -245,17 +240,14 @@ public class WinIsTransApp : IDisposable
         try
         {
             List<AutomationElement> windows = await Task.Run(WindowManager.GetAllWindowsAndTheirChildren).ConfigureAwait(false);
-            Dictionary<AutomationElement, bool> newWindows = windows.ToDictionary(window => window, _ => false);
+            ConcurrentDictionary<AutomationElement, bool> newWindows = new(windows.ToDictionary(window => window, _ => false));
     
-            lock (_windowsLock)
+            ConcurrentDictionary<AutomationElement, bool> windowsCache = _windows;
+            foreach (AutomationElement window in windowsCache.Keys.Where(window => newWindows.ContainsKey(window)))
             {
-                Dictionary<AutomationElement, bool> windowsCache = _windows;
-                foreach (AutomationElement window in windowsCache.Keys.Where(window => newWindows.ContainsKey(window)))
-                {
-                   newWindows[window] = windowsCache[window];
-                }
-                _windows = newWindows;
+                newWindows[window] = windowsCache[window];
             }
+            _windows = newWindows;
             await UpdateText();
         }
         catch (Exception ex)
@@ -272,20 +264,14 @@ public class WinIsTransApp : IDisposable
     private async Task SelectWindowUp()
     {
         _selectedWindowIndex--;
-        lock (_windowsLock)
-        {
-            _selectedWindowIndex = _selectedWindowIndex < 0 ? _windows.Count - 1 : _selectedWindowIndex;
-        }
+        _selectedWindowIndex = _selectedWindowIndex < 0 ? _windows.Count - 1 : _selectedWindowIndex;
         await UpdateText();
     }
 
     private async Task SelectWindowDown()
     {
         _selectedWindowIndex++;
-        lock (_windowsLock)
-        {
-            _selectedWindowIndex = _selectedWindowIndex >= _windows.Count ? 0 : _selectedWindowIndex;
-        }
+        _selectedWindowIndex = _selectedWindowIndex >= _windows.Count ? 0 : _selectedWindowIndex;
         await UpdateText();
     }
 
@@ -311,34 +297,24 @@ public class WinIsTransApp : IDisposable
 
     private async Task UpdateTransparency()
     {
-        lock (_windowsLock)
-        {
-            WindowManager.ApplyTransparencyToWindows(_windows, _transparency);
-        }
-
+        WindowManager.ApplyTransparencyToWindows(_windows, _transparency);
         await UpdateText();
     }
 
     private async Task SelectAll()
     {
-        lock (_windowsLock)
+        foreach (AutomationElement window in _windows.Keys)
         {
-            foreach (AutomationElement window in _windows.Keys)
-            {
-                _windows[window] = true;
-            }
+            _windows[window] = true;
         }
         await UpdateTransparency();
     }
 
     private async Task UnselectAll()
     {
-        lock (_windowsLock)
+        foreach (AutomationElement window in _windows.Keys)
         {
-            foreach (AutomationElement window in _windows.Keys)
-            {
-                _windows[window] = false;
-            }
+            _windows[window] = false;
         }
         await UpdateTransparency();
     }
@@ -374,10 +350,7 @@ public class WinIsTransApp : IDisposable
 
     private void RemoveTransparency()
     {
-        lock (_windowsLock)
-        {
-            WindowManager.ResetTransparencyOnWindows(_windows.Keys.ToList());
-        }
+        WindowManager.ResetTransparencyOnWindows(_windows.Keys.ToList());
     }
 
     public void Dispose()

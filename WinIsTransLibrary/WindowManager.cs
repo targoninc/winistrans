@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
 using static WinIsTransConsole.NativeMethods;
@@ -80,7 +81,7 @@ public static class WindowManager
         SetLayeredWindowAttributes(windowHandle, 0, (byte)transparency, LwaAlpha);
     }
     
-    public static void ApplyTransparencyToWindows(Dictionary<AutomationElement, bool> windows, int transparency)
+    public static void ApplyTransparencyToWindows(ConcurrentDictionary<AutomationElement, bool> windows, int transparency)
     {
         foreach (AutomationElement window in windows.Keys.Where(window => windows[window]))
         {
