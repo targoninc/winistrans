@@ -13,6 +13,7 @@
         CanResize="False"
         FontFamily="/Assets/Kanit-Regular.ttf#Kanit"
         Topmost="True"
+        Name="WinIsTrans"
         Title="WinIsTrans">
 
     <Design.DataContext>

@@ -12,11 +12,10 @@ public class WinIsTransApp : IDisposable
         _onTextChanged = onTextChanged;
         GetWindows();
         RemoveTransparency();
-        UpdateText();
     }
     
     private const int TransparencyStep = 10;
-    private const int GetWindowsIntervalSeconds = 300;
+    private const int GetWindowsIntervalSeconds = 60;
     private const int MaxTransparency = 255;
     private const int MinTransparency = 0;
     private const int MaxRetries = 2;
@@ -62,6 +61,9 @@ public class WinIsTransApp : IDisposable
                 break;
             case ConsoleKey.V:
                 SelectAll();
+                break;
+            case ConsoleKey.F1:
+                Task.Run(() => UpdateWindows(null));
                 break;
             case ConsoleKey.Enter:
                 ToggleHelp();
@@ -118,6 +120,9 @@ public class WinIsTransApp : IDisposable
             case Key.Space:
                 newKey = ConsoleKey.Spacebar;
                 break;
+            case Key.F1:
+                newKey = ConsoleKey.F1;
+                break;
             case Key.Q:
             case Key.Escape:
                 newKey = ConsoleKey.Escape;
@@ -135,12 +140,14 @@ public class WinIsTransApp : IDisposable
     {
         StringBuilder sb = new();
         sb.AppendLine($"Transparency: {_transparency}");
-        sb.AppendLine("Windows:");
+        sb.AppendLine("Show Help (Enter)");
         lock(_windowsLock) {
             if (_windows.Count == 0)
             {
                 sb.AppendLine("Press any key if there are no windows...");
             }
+
+            List<AutomationElement> toRemove = new();
             for (int i = 0; i < _windows.Count; i++)
             {
                 AutomationElement window = _windows.Keys.ElementAt(i);
@@ -148,8 +155,20 @@ public class WinIsTransApp : IDisposable
                 bool isTransparent = _windows[window];
                 string selectedIndicator = isSelected ? "<" : " ";
                 string activeIndicator = isTransparent ? ">" : " ";
-                sb.AppendLine($"{activeIndicator} {window.Current.Name} {selectedIndicator}");
+                string name = window.Current.Name;
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    name = $"{window.Current.ClassName} ({window.Current.NativeWindowHandle.ToString()})";
+                }
+                try
+                {
+                    sb.AppendLine($"{activeIndicator} {name} {selectedIndicator}");
+                } catch (ElementNotAvailableException) // Window has been closed
+                {
+                    toRemove.Add(window);
+                }
             }
+            toRemove.ForEach(w => _windows.Remove(w));
         }
         _outText = sb.ToString();
     }
@@ -207,7 +226,7 @@ public class WinIsTransApp : IDisposable
     {
         try
         {
-            List<AutomationElement> windows = await Task.Run(WindowManager.GetAllWindowsAndTheirChildren);
+            List<AutomationElement> windows = await Task.Run(WindowManager.GetAllWindowsAndTheirChildren).ConfigureAwait(false);
             Dictionary<AutomationElement, bool> newWindows = windows.ToDictionary(window => window, window => false);
 
             lock (_windowsLock)
@@ -219,6 +238,7 @@ public class WinIsTransApp : IDisposable
                 }
                 _windows = newWindows;
             }
+            UpdateText();
         }
         catch (Exception ex)
         {
@@ -312,6 +332,7 @@ public class WinIsTransApp : IDisposable
                        "T: Reset transparency to 100%\n" +
                        "C: Unselect all windows\n" +
                        "V: Select all windows\n" +
+                       "F1: Refresh windows\n" +
                        "Enter: Toggle help\n" +
                        "Q/Esc: Exit\n";
             _onTextChanged(_outText);
