@@ -59,8 +59,11 @@ public static class WindowManager
             throw new Win32Exception(Marshal.GetLastWin32Error());
         }
 
-        int transparency = value != -1 ? (byte) value : LwaAlpha;
-        SetLayeredWindowAttributes(windowHandle, 0, (byte) transparency, LwaAlpha);
+        if (value == -1)
+        {
+            value = 255;
+        }
+        SetLayeredWindowAttributes(windowHandle, 0, (byte) value, LwaAlpha);
     }
 
     public static void ApplyTransparencyToWindow(AutomationElement window, int transparency)
