@@ -25,6 +25,13 @@ public partial class MainWindow : Window
         
         await _program.UpdateWindows();
         await _program.RemoveTransparency();
+        
+        MainWindowViewModel? viewModel = GetMainWindowViewModel();
+        if (viewModel is null)
+        {
+            return;
+        }
+        viewModel.MainText = _program.OutText;
     }
     
     private MainWindowViewModel? GetMainWindowViewModel()
