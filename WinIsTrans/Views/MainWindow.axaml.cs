@@ -16,9 +16,15 @@ public partial class MainWindow : Window
         InitializeComponent();
         
         _program = new WinIsTransApp();
-        _program.AttachTextHandler(OnTextChanged);
-        
         KeyDown += OnKeyDown;
+    }
+    
+    protected override async void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+        
+        await _program.UpdateWindows();
+        await _program.RemoveTransparency();
     }
     
     private MainWindowViewModel? GetMainWindowViewModel()
@@ -29,31 +35,19 @@ public partial class MainWindow : Window
         }
         Console.WriteLine("DataContext is not MainWindowViewModel");
         return null;
+    }
 
-    }
-    
-    private bool OnTextChanged(string text)
-    {
-        MainWindowViewModel? viewModel = GetMainWindowViewModel();
-        if (viewModel is null)
-        {
-            return false;
-        }
-        
-        viewModel.MainText = text;
-        return true;
-    }
-    
     private async void OnKeyDown(object? sender, KeyEventArgs e)
     {
         Console.WriteLine($"OnKeyDown: {e.Key}");
-    
+
         MainWindowViewModel? viewModel = GetMainWindowViewModel();
         if (viewModel is null)
         {
             return;
         }
-        
+
         await _program.HandleAvaloniaKey(e);
+        viewModel.MainText = _program.OutText;
     }
 }

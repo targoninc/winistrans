@@ -8,132 +8,106 @@ namespace WinIsTransConsole;
 
 public class WinIsTransApp : IDisposable
 {
-    public void AttachTextHandler(Func<string, bool> onTextChanged)
-    {
-        _onTextChanged = onTextChanged;
-        GetWindows();
-        RemoveTransparency();
-    }
-    
     private const int TransparencyStep = 10;
-    private const int GetWindowsIntervalSeconds = 60;
     private const int MaxTransparency = 255;
     private const int MinTransparency = 0;
     private const int MaxRetries = 2;
-    private int _transparency = 255;
+
+    public string OutText = string.Empty;
+    
+    private int _transparency = MaxTransparency;
     private int _selectedWindowIndex;
-    private string _outText = string.Empty;
-    private Timer? _timer;
     private bool _helpActive;
+
     private ConcurrentDictionary<AutomationElement, bool> _windows = new();
-    private Func<string, bool> _onTextChanged = _ => true;
+    private Dictionary<ConsoleKey, Func<Task>> _keyHandlers = new();
+    private Dictionary<Key, ConsoleKey> _avaloniaToConsoleKeyMap = new();
+    private readonly object _textLock = new();
+    
+    private void InitializeAvaloniaToConsoleKeyMap()
+    {
+        _avaloniaToConsoleKeyMap = new Dictionary<Key, ConsoleKey>
+        {
+            {Key.W, ConsoleKey.W},
+            {Key.Up, ConsoleKey.UpArrow},
+            {Key.S, ConsoleKey.S},
+            {Key.Down, ConsoleKey.DownArrow},
+            {Key.OemPlus, ConsoleKey.OemPlus},
+            {Key.Add, ConsoleKey.OemPlus},
+            {Key.OemMinus, ConsoleKey.OemMinus},
+            {Key.Subtract, ConsoleKey.OemMinus},
+            {Key.Enter, ConsoleKey.Enter},
+            {Key.R, ConsoleKey.R},
+            {Key.T, ConsoleKey.T},
+            {Key.C, ConsoleKey.C},
+            {Key.V, ConsoleKey.V},
+            {Key.Space, ConsoleKey.Spacebar},
+            {Key.F1, ConsoleKey.F1},
+            {Key.Q, ConsoleKey.Q},
+            {Key.Escape, ConsoleKey.Escape}
+        };
+    }
+    
+    public WinIsTransApp() {
+        InitializeKeyHandlers();
+        InitializeAvaloniaToConsoleKeyMap();
+    }
+    
+    private void InitializeKeyHandlers()
+    {
+        _keyHandlers = new Dictionary<ConsoleKey, Func<Task>>
+        {
+            {ConsoleKey.W, SelectWindowUp},
+            {ConsoleKey.UpArrow, SelectWindowUp},
+            {ConsoleKey.S, SelectWindowDown},
+            {ConsoleKey.DownArrow, SelectWindowDown},
+            {ConsoleKey.OemPlus, IncreaseTransparency},
+            {ConsoleKey.OemMinus, DecreaseTransparency},
+            {ConsoleKey.Spacebar, ToggleCurrentSelectedWindow},
+            {ConsoleKey.R, RemoveTransparency},
+            {ConsoleKey.T, ResetTransparency},
+            {ConsoleKey.C, UnselectAll},
+            {ConsoleKey.V, SelectAll},
+            {ConsoleKey.F1, UpdateWindows},
+            {ConsoleKey.Enter, ToggleHelp},
+            {ConsoleKey.Q, ExitApplication},
+            {ConsoleKey.Escape, ExitApplication}
+        };
+    }
+
+    private Task ExitApplication()
+    {
+        Environment.Exit(0);
+        return Task.CompletedTask;
+    }
 
     public async Task HandleKey(ConsoleKeyInfo keyInfo)
     {
-        _outText = string.Empty;
-        switch (keyInfo.Key)
+        if (!_keyHandlers.TryGetValue(keyInfo.Key, out Func<Task>? handler))
         {
-            case ConsoleKey.W:
-            case ConsoleKey.UpArrow:
-                await SelectWindowUp();
-                break;
-            case ConsoleKey.S:
-            case ConsoleKey.DownArrow:
-                await SelectWindowDown();
-                break;
-            case ConsoleKey.OemPlus:
-                await IncreaseTransparency();
-                break;
-            case ConsoleKey.OemMinus:
-                await DecreaseTransparency();
-                break;
-            case ConsoleKey.Spacebar:
-                await ToggleCurrentSelectedWindow();
-                break;
-            case ConsoleKey.R:
-                RemoveTransparency();
-                break;
-            case ConsoleKey.T:
-                await ResetTransparency();
-                break;
-            case ConsoleKey.C:
-                await UnselectAll();
-                break;
-            case ConsoleKey.V:
-                await SelectAll();
-                break;
-            case ConsoleKey.F1:
-                await Task.Run(() => UpdateWindows(null));
-                break;
-            case ConsoleKey.Enter:
-                await ToggleHelp();
-                break;
-            case ConsoleKey.Q:
-            case ConsoleKey.Escape:
-                Console.WriteLine("Exiting...");
-                RemoveTransparency();
-                Environment.Exit(0);
-                return;
-            default:
-                Console.WriteLine($"Unsupported key ({keyInfo.Key})");
-                await UpdateTransparency();
-                break;
-        }
-    }
-    
-    public async Task HandleAvaloniaKey(KeyEventArgs key)
-    {
-        ConsoleKey newKey;
-        switch (key.Key)
-        {
-            case Key.W:
-            case Key.Up:
-                newKey = ConsoleKey.UpArrow;
-                break;
-            case Key.S:
-            case Key.Down:
-                newKey = ConsoleKey.DownArrow;
-                break;
-            case Key.OemPlus:
-            case Key.Add:
-                newKey = ConsoleKey.OemPlus;
-                break;
-            case Key.OemMinus:
-            case Key.Subtract:
-                newKey = ConsoleKey.OemMinus;
-                break;
-            case Key.Enter:
-                newKey = ConsoleKey.Enter;
-                break;
-            case Key.R:
-                newKey = ConsoleKey.R;
-                break;
-            case Key.T:
-                newKey = ConsoleKey.T;
-                break;
-            case Key.C:
-                newKey = ConsoleKey.C;
-                break;
-            case Key.V:
-                newKey = ConsoleKey.V;
-                break;
-            case Key.Space:
-                newKey = ConsoleKey.Spacebar;
-                break;
-            case Key.F1:
-                newKey = ConsoleKey.F1;
-                break;
-            case Key.Q:
-            case Key.Escape:
-                newKey = ConsoleKey.Escape;
-                break;
-            default:
-                Console.WriteLine($"Unsupported key ({key.Key})");
-                return;
+            Console.WriteLine($"Unsupported key ({keyInfo.Key})");
+            await UpdateTransparency();
+            return;
         }
 
-        ConsoleKeyInfo keyInfo = new((char) newKey, newKey, false, false, false);
-        await HandleKey(keyInfo);
+        await handler();
+    }
+
+    public async Task HandleAvaloniaKey(KeyEventArgs key)
+    {
+        if (!_avaloniaToConsoleKeyMap.TryGetValue(key.Key, out ConsoleKey consoleKey))
+        {
+            Console.WriteLine($"Unsupported key ({key.Key})");
+            return;
+        }
+
+        if (!_keyHandlers.TryGetValue(consoleKey, out Func<Task>? handler))
+        {
+            Console.WriteLine($"Unsupported key ({key.Key})");
+            return;
+        }
+
+        await handler();
     }
 
     private void ListWindows()
@@ -168,58 +142,21 @@ public class WinIsTransApp : IDisposable
             }
         }
         toRemove.ForEach(w => _windows.Remove(w, out _));
-        _outText = sb.ToString();
+        OutText = sb.ToString();
     }
-
-
-    private readonly object _textLock = new();
     
-    private async Task UpdateText()
+    private Task UpdateText()
     {
         string transparencyPercentage = Math.Round((double) _transparency / 255 * 100, 0).ToString(CultureInfo.InvariantCulture) + "%";
     
-        string text;
-    
         lock(_textLock)
         {
-            _outText = "";
-            _outText += $"Transparency: {transparencyPercentage}\n";
+            OutText = "";
+            OutText += $"Transparency: {transparencyPercentage}\n";
             ListWindows();
-            text = _outText; 
         }
         
-        await UpdateTextInternalAsync(text);
-    }
-
-    private async Task UpdateTextInternalAsync(string text, int maxRetries = MaxRetries, CancellationToken cancellationToken = default)
-    {
-        int retries = 0;
-    
-        while (retries <= maxRetries)
-        {
-            try
-            {
-                bool success = _onTextChanged(text);
-    
-                if (success)
-                {
-                    return;
-                }
-    
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return;
-                }
-    
-                await Task.Delay(1000, cancellationToken);
-                retries++;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating text: {ex.Message}");
-                return;
-            }
-        }
+        return Task.CompletedTask;
     }
 
     
@@ -240,39 +177,28 @@ public class WinIsTransApp : IDisposable
         await UpdateTransparency();
     }
 
-    private void GetWindows()
+    public async Task UpdateWindows()
     {
-        const int timerInterval = GetWindowsIntervalSeconds * 1000;
-        _timer = new Timer(UpdateWindows, null, 0, timerInterval);
+        List<AutomationElement> windows = await Task.Run(WindowManager.GetAllWindowsAndTheirChildren).ConfigureAwait(false);
+        ConcurrentDictionary<AutomationElement, bool> newWindows = new(windows.ToDictionary(window => window, _ => false));
+
+        ConcurrentDictionary<AutomationElement, bool> windowsCache = _windows;
+        foreach (AutomationElement window in windowsCache.Keys.Where(window => newWindows.ContainsKey(window)))
+        {
+            newWindows[window] = windowsCache[window];
+        }
+
+        _windows = newWindows;
+        await UpdateText();
     }
 
-    private async void UpdateWindows(object? state)
-    {
-        try
-        {
-            List<AutomationElement> windows = await Task.Run(WindowManager.GetAllWindowsAndTheirChildren).ConfigureAwait(false);
-            ConcurrentDictionary<AutomationElement, bool> newWindows = new(windows.ToDictionary(window => window, _ => false));
-    
-            ConcurrentDictionary<AutomationElement, bool> windowsCache = _windows;
-            foreach (AutomationElement window in windowsCache.Keys.Where(window => newWindows.ContainsKey(window)))
-            {
-                newWindows[window] = windowsCache[window];
-            }
-            _windows = newWindows;
-        }
-        catch (Exception ex)
-        {
-            switch (ex)
-            {
-                default:
-                    Console.WriteLine($"Unhandled exception occurred: {ex.Message}\n{ex.StackTrace}");
-                    throw;
-            }
-        }
-    }
 
     private async Task SelectWindowUp()
     {
+        if (_windows.IsEmpty)
+        {
+            return;
+        }
         _selectedWindowIndex--;
         _selectedWindowIndex = _selectedWindowIndex < 0 ? _windows.Count - 1 : _selectedWindowIndex;
         await UpdateText();
@@ -280,6 +206,10 @@ public class WinIsTransApp : IDisposable
 
     private async Task SelectWindowDown()
     {
+        if (_windows.IsEmpty)
+        {
+            return;
+        }
         _selectedWindowIndex++;
         _selectedWindowIndex = _selectedWindowIndex >= _windows.Count ? 0 : _selectedWindowIndex;
         await UpdateText();
@@ -287,6 +217,10 @@ public class WinIsTransApp : IDisposable
 
     private async Task IncreaseTransparency()
     {
+        if (_transparency == MinTransparency)
+        {
+            return;
+        }
         _transparency -= TransparencyStep;
         _transparency = Math.Max(MinTransparency, _transparency);
         await UpdateTransparency();
@@ -294,6 +228,10 @@ public class WinIsTransApp : IDisposable
 
     private async Task DecreaseTransparency()
     {
+        if (_transparency == MaxTransparency)
+        {
+            return;
+        }
         _transparency += TransparencyStep;
         _transparency = Math.Min(MaxTransparency, _transparency);
         await UpdateTransparency();
@@ -307,7 +245,8 @@ public class WinIsTransApp : IDisposable
 
     private async Task UpdateTransparency()
     {
-        WindowManager.ApplyTransparencyToWindows(_windows, _transparency);
+        ConcurrentDictionary<AutomationElement, bool> windows = _windows;
+        WindowManager.ApplyTransparencyToWindows(windows, _transparency);
         await UpdateText();
     }
 
@@ -334,14 +273,14 @@ public class WinIsTransApp : IDisposable
         if (_helpActive)
         {
             _helpActive = false;
-            _outText = string.Empty;
+            OutText = string.Empty;
             await UpdateText();
         }
         
         else
         {
             _helpActive = true;
-            _outText = "Help:\n" +
+            OutText = "Help:\n" +
                        "W/Up Arrow: Select window above\n" +
                        "S/Down Arrow: Select window below\n" +
                        "+: Increase transparency\n" +
@@ -354,26 +293,18 @@ public class WinIsTransApp : IDisposable
                        "F1: Refresh windows\n" +
                        "Enter: Toggle help\n" +
                        "Q/Esc: Exit\n";
-            _onTextChanged(_outText);
         }
     }
 
-    private void RemoveTransparency()
+    public Task RemoveTransparency()
     {
         WindowManager.ResetTransparencyOnWindows(_windows.Keys.ToList());
+        return Task.CompletedTask;
     }
 
     public void Dispose()
     {
-        try
-        {
-            _timer?.Dispose();
-            _timer = null;
-        }
-        finally
-        {
-            Console.WriteLine("Removing transparency...");
-            RemoveTransparency();
-        }
+        Console.WriteLine("Removing transparency...");
+        RemoveTransparency();
     }
 }
