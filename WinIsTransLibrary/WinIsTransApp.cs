@@ -154,13 +154,13 @@ public class WinIsTransApp : IDisposable
             bool isTransparent = _windows[window];
             string selectedIndicator = isSelected ? "<" : " ";
             string activeIndicator = isTransparent ? ">" : " ";
-            string name = window.Current.Name;
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                name = $"{window.Current.ClassName} ({window.Current.NativeWindowHandle.ToString()})";
-            }
             try
             {
+                string name = window.Current.Name;
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    name = $"{window.Current.ClassName} ({window.Current.NativeWindowHandle.ToString()})";
+                }
                 sb.AppendLine($"{activeIndicator} {name} {selectedIndicator}");
             } catch (ElementNotAvailableException) // Window has been closed
             {
@@ -172,12 +172,23 @@ public class WinIsTransApp : IDisposable
     }
 
 
+    private readonly object _textLock = new();
+    
     private async Task UpdateText()
     {
         string transparencyPercentage = Math.Round((double) _transparency / 255 * 100, 0).ToString(CultureInfo.InvariantCulture) + "%";
-        _outText += $"Transparency: {transparencyPercentage}\n";
-        ListWindows();
-        await UpdateTextInternalAsync(_outText);
+    
+        string text;
+    
+        lock(_textLock)
+        {
+            _outText = "";
+            _outText += $"Transparency: {transparencyPercentage}\n";
+            ListWindows();
+            text = _outText; 
+        }
+        
+        await UpdateTextInternalAsync(text);
     }
 
     private async Task UpdateTextInternalAsync(string text, int maxRetries = MaxRetries, CancellationToken cancellationToken = default)
@@ -248,7 +259,6 @@ public class WinIsTransApp : IDisposable
                 newWindows[window] = windowsCache[window];
             }
             _windows = newWindows;
-            await UpdateText();
         }
         catch (Exception ex)
         {
