@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using WinIsTrans.ViewModels;
@@ -20,25 +21,39 @@ public partial class MainWindow : Window
         KeyDown += OnKeyDown;
     }
     
+    private MainWindowViewModel? GetMainWindowViewModel()
+    {
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            return viewModel;
+        }
+        Console.WriteLine("DataContext is not MainWindowViewModel");
+        return null;
+
+    }
+    
     private bool OnTextChanged(string text)
     {
-        if (DataContext is not MainWindowViewModel viewModel)
+        MainWindowViewModel? viewModel = GetMainWindowViewModel();
+        if (viewModel is null)
         {
-            Console.WriteLine("DataContext is not MainWindowViewModel");
             return false;
         }
+        
         viewModel.MainText = text;
         return true;
     }
     
-    private void OnKeyDown(object? sender, KeyEventArgs e)
+    private async void OnKeyDown(object? sender, KeyEventArgs e)
     {
         Console.WriteLine($"OnKeyDown: {e.Key}");
-        if (DataContext is not MainWindowViewModel viewModel)
+    
+        MainWindowViewModel? viewModel = GetMainWindowViewModel();
+        if (viewModel is null)
         {
-            Console.WriteLine("DataContext is not MainWindowViewModel");
             return;
         }
-        _program.HandleAvaloniaKey(e);
+        
+        await _program.HandleAvaloniaKey(e);
     }
 }
